@@ -8,6 +8,7 @@ import cv2
 import video
 import os
 import xml.etree.ElementTree as ET
+import argparse
 
 my_lane = []
 
@@ -53,11 +54,11 @@ def draw_flow(img, flow, n, my_lane, step=16):
             if point[1]>=0 and point[1]<=375:
                 y.append(point[1])
                 x.append(point[0])
-    
+
     #h, w = img.shape[:2]
     #y, x = np.mgrid[step/2:h:step, step/2:w:step].reshape(2,-1).astype(int)
     fx, fy = flow[y,x].T
-    
+
     index = 0
     for lane in my_lane:
         for point in lane[1]:
@@ -65,7 +66,7 @@ def draw_flow(img, flow, n, my_lane, step=16):
                 point[0] += int(fx[index])
                 point[1] += int(fy[index])
                 index += 1
-            
+
     lines = np.vstack([x, y, x+fx, y+fy]).T.reshape(-1, 2, 2)
     lines = np.int32(lines + 0.5)
     vis = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
@@ -73,77 +74,94 @@ def draw_flow(img, flow, n, my_lane, step=16):
     for (x1, y1), (x2, y2) in lines:
         cv2.circle(vis, (x1, y1), 3, (0, 255, 0), -1)
     return vis
-    
-def draw_hsv(flow):
-    h, w = flow.shape[:2]
-    fx, fy = flow[:,:,0], flow[:,:,1]
-    ang = np.arctan2(fy, fx) + np.pi
-    v = np.sqrt(fx*fx+fy*fy)
-    hsv = np.zeros((h, w, 3), np.uint8)
-    hsv[...,0] = ang*(180/np.pi/2)
-    hsv[...,1] = 255
-    hsv[...,2] = np.minimum(v*4, 255)
-    bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-    return bgr
 
-def warp_flow(img, flow):
-    h, w = flow.shape[:2]
-    flow = -flow
-    flow[:,:,0] += np.arange(w)
-    flow[:,:,1] += np.arange(h)[:,np.newaxis]
-    res = cv2.remap(img, flow, None, cv2.INTER_LINEAR)
-    return res
 
 if __name__ == '__main__':
-    import sys
-    n = 35
-    prev = cv2.imread('./img/'+ '0'*(10-len(str(n))) + str(n) +'.png')
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-k", "--kitti_path",
+        help="Path to kitti dir.", default = "/media/csg/WD/kitti/data")
+    parser.add_argument(
+        "-d", "--date",
+        help="The date of the data", default = "2011_09_26")
+    parser.add_argument(
+        "-dr", "--drive",
+        help="The drive of the data", default = "2011_09_26_drive_0086_sync")
+    parser.add_argument(
+        "-s", "--step",
+        help="The step of label", default = 5)
+    parser.add_argument(
+        "-v", "--visualization",
+        help="Display or not.", default = 0)
+    args = parser.parse_args()
+
+    base_path = args.kitti_path
+    data_path = os.path.join(base_path, args.date)
+    drive_path = os.path.join(data_path, args.drive)
+    img_path = os.path.join(drive_path, "image_00/data")
+    label_path = os.path.join(drive_path, "label_00")
+    lane_path = os.path.join(drive_path, "lane")
+    os.system("mkdir -p " + lane_path)
+
+    break_recovery = 0
+    step = args.step
+
+    command_return = os.popen("ls " + label_path + " | sort | awk \'NR==1\'")
+    min_n = command_return.read()[:10]
+    command_return = os.popen("ls " + label_path + " | sort -r | awk \'NR==1\'")
+    max_n = command_return.read()[:10]
+    min_frame = int(min_n)
+    max_frame = int(max_n)
+
+    n = min_frame
+    if n%step == 0:
+        path_to_file = os.path.join(label_path, '0'*(10-len(str(n))) + str(n)+".xml")
+        my_lane = load_xml(path_to_file)
+
+    _img_path = os.path.join(img_path, '0'*(10-len(str(n))) + str(n) +'.png')
+    prev = cv2.imread(_img_path)
     prevgray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
-    show_hsv = False
-    show_glitch = False
-    cur_glitch = prev.copy()
 
     while True:
-        n = n + 1
-        img = cv2.imread('./img/'+ '0'*(10-len(str(n))) + str(n) +'.png')
-        
-        if n%5 == 1:
-            curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
-            xmls_path = os.path.join(curr_path, '../label_00')
-            path_to_file = os.path.join(xmls_path, '0'*(10-len(str(n-1))) + str(n-1)+".xml")
-            my_lane = load_xml(path_to_file)
-              
+        n += 1
+        if n > max_frame:
+            break
+        if n%step == 0:
+            path_to_file = os.path.join(label_path, '0'*(10-len(str(n))) + str(n)+".xml")
+            try:
+                my_lane = load_xml(path_to_file)
+            except:
+                break_recovery = 1
+                n += step - 1
+                continue
+
+        if break_recovery:
+            _img_path = os.path.join(img_path, '0'*(10-len(str(n-1))) + str(n-1) +'.png')
+            prev = cv2.imread(_img_path)
+            prevgray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
+
         # print (my_lane)
-        os.system("mkdir lane -p")
-        f = open('./lane/'+ '0'*(10-len(str(n-1))) + str(n-1) +'.txt', 'w')
+
+        lane_txt_path = os.path.join(lane_path, '0'*(10-len(str(n-1))) + str(n-1) +'.txt')
+        f = open(lane_txt_path, 'w')
         for i in my_lane:
             f.write(str(i[0])+'\t')
             for point in i[1]:
                 f.write(str(point[0])+'\t'+str(point[1])+'\t')
             f.write('\n')
-            
-        
+
+        _img_path = os.path.join(img_path, '0'*(10-len(str(n))) + str(n) +'.png')
+        img = cv2.imread(_img_path)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         flow = cv2.calcOpticalFlowFarneback(prevgray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
         prevgray = gray
 
         draw_flow(gray, flow, n, my_lane)
-        """
-        cv2.imshow('flow', draw_flow(gray, flow, n, my_lane))
+        if args.visualization == 1:
+            cv2.imshow('flow', draw_flow(gray, flow, n, my_lane))
 
-        ch = cv2.waitKey(5)
-        if ch == 27:
-            break
-        if ch == ord('1'):
-            show_hsv = not show_hsv
-            print('HSV flow visualization is', ['off', 'on'][show_hsv])
-        if ch == ord('2'):
-            show_glitch = not show_glitch
-            if show_glitch:
-                cur_glitch = img.copy()
-            print('glitch is', ['off', 'on'][show_glitch])
-        """
-            
-        
+            ch = cv2.waitKey(5)
+            if ch == 27:
+                break
+
     cv2.destroyAllWindows()
-    
