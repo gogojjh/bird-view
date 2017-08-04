@@ -24,7 +24,7 @@ def load_xml(path_to_file):
         index = -1
         one = [int(name[0])]
         for i in range(len(lane)):
-            if lane[0][0] == int(name[0]):
+            if lane[i][0] == int(name[0]):
                 index = i
                 break
 
