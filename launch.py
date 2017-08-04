@@ -12,6 +12,9 @@ if __name__ == '__main__':
         "-k", "--kitti_path",
         help="Path to kitti dir.", default = "/media/csg/WD/kitti/data")
     parser.add_argument(
+        "--drive_start",
+        help="The start drive number", default = 0)
+    parser.add_argument(
         "-s", "--step",
         help="The step of label", default = 5)
     parser.add_argument(
@@ -32,6 +35,8 @@ if __name__ == '__main__':
         drive_list = cr.split()
         for drive in drive_list:
             drive = drive.split("/")[-1]
+            if int(drive[-9:-5]) < int(args.drive_start):
+                continue
 
             if int(args.visualization) == 1:
                 print(date + " --- " + drive + " --- Start visualization!!!")
@@ -47,5 +52,5 @@ if __name__ == '__main__':
                 res = os.system("python ./src/project.py -k " + base_path + " -d "
                             + date + " --drive " + drive)
                 assert res == 0, "Sub-process interrupt!!!"
-                
+
             print(date + " --- " + drive + " --- DONE")

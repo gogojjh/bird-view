@@ -62,7 +62,11 @@ if __name__ == '__main__':
         f_w_path = os.path.join(lane_r_path, f_path[-14:])
         f_w = open(f_w_path, "w")
         bin_path = os.path.join(velodyne_path, f_path[-14:-4]+".bin")
-        velo_points = load_bin(bin_path)
+        try:
+            velo_points = load_bin(bin_path)
+        except:
+            print("Miss velo data!!!")
+            continue
         velo_img = project(velo_points, P_velo_to_img)
 
         lines = f_r.readlines()

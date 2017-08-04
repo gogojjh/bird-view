@@ -52,8 +52,9 @@ def draw_flow(img, flow, n, my_lane, step=16):
     for lane in my_lane:
         for point in lane[1]:
             if point[1]>0 and point[1]<375:
-                y.append(point[1])
-                x.append(point[0])
+                if point[0]>0 and point[0]<1242:
+                    y.append(point[1])
+                    x.append(point[0])
 
     #h, w = img.shape[:2]
     #y, x = np.mgrid[step/2:h:step, step/2:w:step].reshape(2,-1).astype(int)
@@ -63,9 +64,10 @@ def draw_flow(img, flow, n, my_lane, step=16):
     for lane in my_lane:
         for point in lane[1]:
             if point[1]>0 and point[1]<375:
-                point[0] += int(fx[index])
-                point[1] += int(fy[index])
-                index += 1
+                if point[0]>0 and point[0]<1242:
+                    point[0] += int(fx[index])
+                    point[1] += int(fy[index])
+                    index += 1
 
     lines = np.vstack([x, y, x+fx, y+fy]).T.reshape(-1, 2, 2)
     lines = np.int32(lines + 0.5)
