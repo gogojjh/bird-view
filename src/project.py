@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Python 2/3 compatibility
-# from __future__ import print_function
+from __future__ import print_function
 
 import numpy as np
 import os
@@ -11,8 +11,7 @@ def load_bin(file_path):
     a = np.fromfile(file_path, dtype=np.float32)
     b = a.reshape(-1,4)
     b = [x for x in b if x[0] > 5]
-    b = np.array(b)
-    return b
+    return np.array(b)
 
 def project(velo_points, P_velo_to_img):
     velo_points[:,-1] = 1
@@ -25,8 +24,7 @@ def project(velo_points, P_velo_to_img):
     return np.array(velo_img)
 
 def find_vel_point(point, velo_img):
-    dis = np.array([abs(point[0]-i[0]) + abs(point[1]-i[1]) for i in velo_img])
-    return np.argmin(dis)
+    return np.argmin(np.array([abs(point[0]-i[0]) + abs(point[1]-i[1]) for i in velo_img]))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -37,14 +35,14 @@ if __name__ == '__main__':
         "-d", "--date",
         help="The date of the data", default = "2011_09_26")
     parser.add_argument(
-        "-dr", "--drive",
-        help="The drive of the data", default = "2011_09_26_drive_0086_sync")
+        "--drive",
+        help="The drive of the data", default = "2011_09_26_drive_0001_sync")
 
     args = parser.parse_args()
 
     base_path = args.kitti_path
-    data_path = os.path.join(base_path, args.date)
-    drive_path = os.path.join(data_path, args.drive)
+    date_path = os.path.join(base_path, args.date)
+    drive_path = os.path.join(date_path, args.drive)
     img_path = os.path.join(drive_path, "image_00/data")
     label_path = os.path.join(drive_path, "label_00")
     lane_path = os.path.join(drive_path, "lane")
@@ -52,7 +50,7 @@ if __name__ == '__main__':
     os.system("mkdir -p " + lane_r_path)
     velodyne_path = os.path.join(drive_path, "velodyne_points/data")
 
-    calib_path = os.path.join(data_path, "matric.txt")
+    calib_path = os.path.join(date_path, "matric.txt")
     P_velo_to_img = np.loadtxt(calib_path)
 
     command_return = os.popen("find " + lane_path + " -name \"*.txt\"")

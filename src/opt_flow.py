@@ -51,7 +51,7 @@ def draw_flow(img, flow, n, my_lane, step=16):
     x = []
     for lane in my_lane:
         for point in lane[1]:
-            if point[1]>=0 and point[1]<=375:
+            if point[1]>0 and point[1]<375:
                 y.append(point[1])
                 x.append(point[0])
 
@@ -62,7 +62,7 @@ def draw_flow(img, flow, n, my_lane, step=16):
     index = 0
     for lane in my_lane:
         for point in lane[1]:
-            if point[1]>=0 and point[1]<=375:
+            if point[1]>0 and point[1]<375:
                 point[0] += int(fx[index])
                 point[1] += int(fy[index])
                 index += 1
@@ -85,8 +85,8 @@ if __name__ == '__main__':
         "-d", "--date",
         help="The date of the data", default = "2011_09_26")
     parser.add_argument(
-        "-dr", "--drive",
-        help="The drive of the data", default = "2011_09_26_drive_0086_sync")
+        "--drive",
+        help="The drive of the data", default = "2011_09_26_drive_0001_sync")
     parser.add_argument(
         "-s", "--step",
         help="The step of label", default = 5)
@@ -96,15 +96,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     base_path = args.kitti_path
-    data_path = os.path.join(base_path, args.date)
-    drive_path = os.path.join(data_path, args.drive)
+    date_path = os.path.join(base_path, args.date)
+    drive_path = os.path.join(date_path, args.drive)
     img_path = os.path.join(drive_path, "image_00/data")
     label_path = os.path.join(drive_path, "label_00")
     lane_path = os.path.join(drive_path, "lane")
     os.system("mkdir -p " + lane_path)
 
     break_recovery = 0
-    step = args.step
+    step = int(args.step)
 
     command_return = os.popen("ls " + label_path + " | sort | awk \'NR==1\'")
     min_n = command_return.read()[:10]
