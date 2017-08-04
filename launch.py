@@ -34,27 +34,23 @@ if __name__ == '__main__':
         cr = command_return.read()
         drive_list = cr.split()
         for drive in drive_list:
-            try:
-                drive = drive.split("/")[-1]
-                if int(drive[-9:-5]) < int(args.drive_start):
-                    continue
-
-                if int(args.visualization) == 1:
-                    print(date + " --- " + drive + " --- Start visualization!!!")
-                    res = os.system("python ./src/visualization.py -k " + base_path + " -d "
-                                + date + " --drive " + drive)
-                    assert res == 0, "Sub-process interrupt!!!"
-                else:
-                    print(date + " --- " + drive + " --- Start opt!!!")
-                    res = os.system("python ./src/opt_flow.py -k " + base_path + " -d "
-                                + date + " --drive " + drive + " -s " + str(args.step) + " -v " + str(args.visualization))
-                    assert res == 0, "Sub-process interrupt!!!"
-                    print(date + " --- " + drive + " --- Start project!!!")
-                    res = os.system("python ./src/project.py -k " + base_path + " -d "
-                                + date + " --drive " + drive)
-                    assert res == 0, "Sub-process interrupt!!!"
-
-                print(date + " --- " + drive + " --- DONE")
-            except:
-                print("Something wrong in " + date + " --- " + drive)
+            drive = drive.split("/")[-1]
+            if int(drive[-9:-5]) < int(args.drive_start):
                 continue
+
+            if int(args.visualization) == 1:
+                print(date + " --- " + drive + " --- Start visualization!!!")
+                res = os.system("python ./src/visualization.py -k " + base_path + " -d "
+                            + date + " --drive " + drive)
+                assert res == 0, "Sub-process interrupt!!!"
+            else:
+                print(date + " --- " + drive + " --- Start opt!!!")
+                res = os.system("python ./src/opt_flow.py -k " + base_path + " -d "
+                            + date + " --drive " + drive + " -s " + str(args.step) + " -v " + str(args.visualization))
+                assert res == 0, "Sub-process interrupt!!!"
+                print(date + " --- " + drive + " --- Start project!!!")
+                res = os.system("python ./src/project.py -k " + base_path + " -d "
+                            + date + " --drive " + drive)
+                assert res == 0, "Sub-process interrupt!!!"
+
+            print(date + " --- " + drive + " --- DONE")
